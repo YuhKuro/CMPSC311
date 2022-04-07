@@ -50,6 +50,9 @@ int main()
 
         send(fd, header, strlen(message) + strlen(header), 0); // Sends message to the socket
 
+        memset(&header, 0,  sizeof(message)); // clear message sent buffer
+
+        strcpy(header, "User1: "); // reset to default message
     }
 
 }
