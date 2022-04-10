@@ -12,6 +12,8 @@
 
 #include <errno.h>
 
+#include <string.h>
+
 
 
 
@@ -52,17 +54,19 @@ int main()
 
     listen(fd, 5); // Listens for client connections only allows 5
 
-
-
     while(conn = accept(fd, (struct sockaddr *)NULL, NULL)){
 
         pid_t pid;
 
         if((pid = fork()) == 0){
 
-            while (recv(conn, message, 100, 0)>0){
+            while (recv(conn, message, 500, 0)>0){
 
                 printf("%s",message);
+
+                send(conn, message, sizeof(message), 0); // Sends recieved message to client
+
+                
 
             }
 
