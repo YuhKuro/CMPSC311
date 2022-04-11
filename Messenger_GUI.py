@@ -8,7 +8,13 @@ import fcntl
 
 from socket import*
 
-#os.mkfifo("./pytoc", 0o666)
+try:
+
+	os.mkfifo("./pytoc", 0o666)
+
+except FileExistsError:
+
+	pass
 
 def loop():
 
