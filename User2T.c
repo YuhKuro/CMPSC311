@@ -25,20 +25,20 @@ int fd_send, fd_rec; // fd_send stores the text file for sending text to the pyt
 
 int conn; //This is the connection file descriptor which will be used to retrieve client connections
 
-char message[500] = ""; // Stores the messages being sent by the server
-char message_r[500] = ""; // Stores the message recieved from the socket
+char message[10000] = ""; // Stores the messages being sent by the server
+char message_r[10000] = ""; // Stores the message recieved from the socket
 
-char header[500] = "User2: "; // Assigns the tag User1 to the message to identify who is sending the message
+char header[10000] = "User2: "; // Assigns the tag User1 to the message to identify who is sending the message
 
 static void *readMessage() // Reads messages from socket and sends them to Python GUI
 {
     FILE *file; // Creates a file pointer
-    recv(fd, message_r, 100, 0); // Recieves the message sent from the socket and stores it in message_r char array
+    recv(fd, message_r, 10000, 0); // Recieves the message sent from the socket and stores it in message_r char array
     file = fopen("send.txt", "a"); //Opens the text file for communicating with python GUI and stores the pointer to the file in the file variable
     if(file != NULL) // Checks to make sure file exists
     {
 	    fwrite(message_r, 1, strlen(message_r), file); // Writes message that is stored in message_r char array to the file
-	    memset(&message_r, 0, 100); // Clears message_r for new messages
+	    memset(&message_r, 0, sizeof(message_r)); // Clears message_r for new messages
     }
     fclose(file); // Closes the file
     return (void*) "done"; // indicates thread process has been completed
@@ -53,14 +53,16 @@ static void *writeMessage() // Reads messages from Python GUI and sends them to 
     
     if(fd_rec > 0) // Checks to make sure there was no errors when opening PIPE
     {
-        count = read(fd_rec, message, 100); // Reads in strings sent through PIPE and saves them in message char array
+        count = read(fd_rec, message, 10000); // Reads in strings sent through PIPE and saves them in message char array
         if(count != 0) // Checks to make sure the bytes read in are not 0
         {
             strcat(header, message); // Puts User tag infront of message
 
             send(fd, header, strlen(message) + strlen(header), 0); // Sends message to the socket
 
-            memset(&header, 0,  sizeof(message)); // clear message sent buffer
+            memset(&header, 0,  sizeof(header)); // clear message sent buffer
+            
+            memset(&message, 0, sizeof(message)); // clear message buffer
 
             strcpy(header, "User2: "); // reset to default message 
             
@@ -102,7 +104,7 @@ int main()
         {
             perror("Read Thread Error");
         }
-        //t=pthread_join(t2, &res);
+        t=pthread_join(t2, &res);
     }
 
 }
