@@ -10,14 +10,35 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <signal.h>
+#include <time.h>
 #include "clients.h" // For CLientList function definitions
 
 #define LENGTH_MSG 101
 #define LENGTH_SEND 201
 #define LENGTH_NAME 31
+#define LENGTH_TIME 256
 
 int fd = 0, client_fd = 0; // File Descriptors for the sockets
 ClientList *root, *now; // List of currently connected clients
+
+char* get_current_time() {
+  char *time_buf = malloc(LENGTH_TIME);
+  time_t now = time(&now);
+
+  if (now == -1) {
+    printf("The time() function has failed");
+  }
+
+  struct tm *ptm = localtime(&now);
+
+  if (ptm == NULL) {
+    printf("The gmtime() function failed");
+  }
+
+  strftime(time_buf, LENGTH_TIME, "%I:%M %p", ptm);
+
+  return time_buf;
+}
 
 void catch_ctrl_c_and_quit(int sig) {
   ClientList *tmp;
@@ -82,7 +103,10 @@ void client_handler(void *p_client) {
       if (strlen(recv_buf) == 0) {
         continue;
       }
-      sprintf(send_buf, "%s: %s from %s", np->name, recv_buf, np->ip);
+
+      char *current_time = get_current_time();
+      sprintf(send_buf, "[%s] %s: %s", current_time, np->name, recv_buf);
+      free(current_time);
     } else if(receive == 0 || strcmp(recv_buf, "exit") == 0) {
       printf("%s(%s)(%d) leaves the room.\n", np->name, np->ip, np->data);
       sprintf(send_buf, "%s(%s) has left the room.", np->name, np->ip);
