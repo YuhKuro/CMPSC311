@@ -1,40 +1,22 @@
 #include <stdio.h>
-
 #include <sys/socket.h> //For Sockets
-
 #include <stdlib.h>
-
 #include <netinet/in.h> //For the AF_INET (Address Family)
-
 #include <unistd.h>
-
 #include <fcntl.h>
-
 #include <errno.h>
-
 #include <string.h>
-
 #include <pthread.h>
-
 #include <sys/types.h>
-
 #include <arpa/inet.h>
-
 #include <signal.h>
-
 #include "clients.h" // For CLientList function definitions
 
 #define LENGTH_MSG 101
-
 #define LENGTH_SEND 201
-
 #define LENGTH_NAME 31
 
-
-
-
 int fd = 0, client_fd = 0; // File Descriptors for the sockets
-
 ClientList *root, *now; // List of currently connected clients
 
 void catch_ctrl_c_and_quit(int sig) {
@@ -126,68 +108,59 @@ void client_handler(void *p_client) {
   free(np);
 }
 
-int main()
+int main() {
+  signal(SIGINT, catch_ctrl_c_and_quit);
 
-{
+  fd = socket(AF_INET, SOCK_STREAM, 0); // This creates a new socket and returns the identifier of the socket into fd
 
-    signal(SIGINT, catch_ctrl_c_and_quit);
+  if(fd < 0) {  // Checks to see if there was an error creating the socket
+    perror("Socket Error");
+    exit(EXIT_FAILURE);
+  } 
 
-    fd = socket(AF_INET, SOCK_STREAM, 0); // This creates a new socket and returns the identifier of the socket into fd
+  struct sockaddr_in serv, client; // Main Sockets Variables
 
-    if(fd < 0) {  // Checks to see if there was an error creating the socket
-      perror("Socket Error");
+  int s_addrlen = sizeof(serv);
+  int c_addrlen = sizeof(client);
+
+  memset(&serv, 0, s_addrlen);
+  memset(&client, 0, c_addrlen);
+
+  serv.sin_family = PF_INET;
+  serv.sin_addr.s_addr = INADDR_ANY;
+  serv.sin_port = htons(18000); // Defines the port at where the server will listen for connections
+
+  bind(fd, (struct sockaddr *)&serv, s_addrlen); //Assigns the address specified by serv to the socket
+  listen(fd, 5); // Listens for client connections only allows 5
+
+  // Returns the current address to which the socket sockfd is bound, in the buffer pointed to by addr.
+  getsockname(fd, (struct sockaddr*) &serv, (socklen_t*) &s_addrlen); 
+  printf("Start Server on: %s:%d\n", inet_ntoa(serv.sin_addr), ntohs(serv.sin_port));
+
+  root = newClient(fd, inet_ntoa(serv.sin_addr));
+  now = root;
+
+  while(1) {
+    client_fd = accept(fd, (struct sockaddr*) &client, (socklen_t*) &c_addrlen); // Keeps accepting new clients
+
+    getpeername(client_fd, (struct sockaddr*) &client, (socklen_t*) &c_addrlen);      
+    printf("Client %s:%d has connected.\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+
+    ClientList *c = newClient(client_fd, inet_ntoa(client.sin_addr));
+
+    c->prev = now;
+    now->link = c;
+    now = c;
+
+    pthread_t new_client;
+
+    if (pthread_create(&new_client, NULL, (void *) client_handler, (void *) c) != 0) {
+      perror("An error occured when attempting to create a new thread");
+
       exit(EXIT_FAILURE);
-    } 
-
-
-    struct sockaddr_in serv, client; // Main Sockets Variables
-
-    int s_addrlen = sizeof(serv);
-    int c_addrlen = sizeof(client);
-
-    memset(&serv, 0, s_addrlen);
-    memset(&client, 0, c_addrlen);
-
-    serv.sin_family = PF_INET;
-
-    serv.sin_addr.s_addr = INADDR_ANY;
-
-    serv.sin_port = htons(18000); // Defines the port at where the server will listen for connections
-
-    bind(fd, (struct sockaddr *)&serv, s_addrlen); //Assigns the address specified by serv to the socket
-
-    listen(fd, 5); // Listens for client connections only allows 5
-
-    // Returns the current address to which the socket sockfd is bound, in the buffer pointed to by addr.
-    getsockname(fd, (struct sockaddr*) &serv, (socklen_t*) &s_addrlen); 
-    printf("Start Server on: %s:%d\n", inet_ntoa(serv.sin_addr), ntohs(serv.sin_port));
-
-    root = newClient(fd, inet_ntoa(serv.sin_addr));
-    now = root;
-
-    while(1){
-        
-        client_fd = accept(fd, (struct sockaddr*) &client, (socklen_t*) &c_addrlen); // Keeps accepting new clients
-
-        getpeername(client_fd, (struct sockaddr*) &client, (socklen_t*) &c_addrlen);      
-        printf("Client %s:%d has connected.\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-
-        ClientList *c = newClient(client_fd, inet_ntoa(client.sin_addr));
-
-        c->prev = now;
-        now->link = c;
-        now = c;
-
-        pthread_t new_client;
-
-        if (pthread_create(&new_client, NULL, (void *) client_handler, (void *) c) != 0) {
-          perror("An error occured when attempting to create a new thread");
-
-          exit(EXIT_FAILURE);
-        }
-
     }
+  }
 
-    return 0;
+  return 0;
 
 }
