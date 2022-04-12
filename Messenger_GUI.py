@@ -4,9 +4,13 @@ import stat
 
 import os
 
+import sys
+
 import fcntl
 
 from socket import*
+
+
 
 try:
 
@@ -50,7 +54,15 @@ def handle_click(event):
 
 	str1 = entry.get() +'\n'
 
-	os.write(fd, str1.encode())
+	try:
+
+		os.write(fd, str1.encode())
+
+	except BrokenPipeError:
+
+		pass
+
+	text.insert(tk.END, "Me: " + str1)
 
 	entry.delete(0,tk.END)
 
