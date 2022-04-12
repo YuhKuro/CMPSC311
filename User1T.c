@@ -66,23 +66,29 @@ static void *readMessage() // Reads messages from socket and sends them to Pytho
 
 {
 
+    int errorCheck=0;
+
     FILE *file; // Creates a file pointer
 
-    recv(fd, message_r, 10000, 0); // Recieves the message sent from the socket and stores it in message_r char array
+    errorCheck = recv(fd, message_r, 10000, MSG_DONTWAIT); // Recieves the message sent from the socket and stores it in message_r char array
 
-    file = fopen("send.txt", "a"); //Opens the text file for communicating with python GUI and stores the pointer to the file in the file variable
+    if(errorCheck > 0){
 
-    if(file != NULL) // Checks to make sure file exists
+	    file = fopen("send.txt", "w"); //Opens the text file for communicating with python GUI and stores the pointer to the file in the file variable
 
-    {
+	    if(file != NULL) // Checks to make sure file exists
 
-	    fwrite(message_r, 1, strlen(message_r), file); // Writes message that is stored in message_r char array to the file
+	    {
 
-	    memset(&message_r, 0, sizeof(message_r)); // Clears message_r for new messages
+		    fwrite(message_r, 1, strlen(message_r), file); // Writes message that is stored in message_r char array to the file
+
+		    memset(&message_r, 0, sizeof(message_r)); // Clears message_r for new messages
+
+	    }
+
+	    fclose(file); // Closes the file
 
     }
-
-    fclose(file); // Closes the file
 
     return (void*) "done"; // indicates thread process has been completed
 
@@ -110,7 +116,7 @@ static void *writeMessage() // Reads messages from Python GUI and sends them to 
 
         count = read(fd_rec, message, 10000); // Reads in strings sent through PIPE and saves them in message char array
 
-        if(count != 0) // Checks to make sure the bytes read in are not 0
+        if(count > 0) // Checks to make sure the bytes read in are not 0
 
         {
 
@@ -136,9 +142,11 @@ static void *writeMessage() // Reads messages from Python GUI and sends them to 
 
         }
 
-        memset(&header, 0,  sizeof(message)); // clear message sent buffer
+        memset(&header, 0,  sizeof(header)); // clear message sent buffer
 
         strcpy(header, "User1: "); // reset to default message
+
+        memset(&message, 0, sizeof(message));
 
         close(fd_rec);
 
@@ -172,7 +180,7 @@ int main()
 
 
 
-    serv.sin_port = htons(18000); // Connects to the sockets port
+    serv.sin_port = htons(8888); // Connects to the sockets port
 
 
 
@@ -198,7 +206,9 @@ int main()
 
         }
 
-        s=pthread_join(t1, &res); // Pauses main thread until the writing thread has completed
+        sleep(1);
+
+        //s=pthread_join(t1, &res); // Pauses main thread until the writing thread has completed
 
         t = pthread_create(&t2, NULL, readMessage, NULL);  // Creates thread that reads messages from socket and sends them to python GUI through text file might change those so it is sent through PIPE if there is problems when sending other users messages
 
@@ -210,7 +220,9 @@ int main()
 
         }
 
-        t=pthread_join(t2, &res);
+        sleep(1);
+
+        //t=pthread_join(t2, &res);
 
     }
 
