@@ -8,9 +8,9 @@ import sys
 
 import fcntl
 
-from socket import*
+import errno
 
-
+from datetime import datetime
 
 try:
 
@@ -20,39 +20,51 @@ except FileExistsError:
 
 	pass
 
+try:
+
+	os.mkfifo("./onexit", 0o666)
+
+except FileExistsError:
+
+	pass
+
 def loop():
 
-	with open('send.txt') as f:
+	io = os.open("ctopy", os.O_RDONLY | os.O_NONBLOCK)
 
-		str1 = ''.join(f.readlines())
+	try:
 
-		str1.replace("{", "")
+		buffer = os.read(io,10000)
 
-		str1.replace("}", "")
+	except OSError as err:
 
-		text.insert(tk.END,str1)
+		if err.errno == errno.EAGAIN or err.errno == errno.EWOULDBLOCK:
 
-		f.close()
+			buffer = None
 
-	with open("send.txt", 'r+') as f:
+		else:
 
-    		f.truncate(0)
+			raise
 
-    		f.close()
+	if buffer is None:
+
+		os.close(io)
+
+	else:
+
+		str1 = buffer.decode("utf-8") + '\n'
+
+		if(len(str1) > 2):
+
+			text.insert(tk.END,str1)
 
 	window.after(500,loop)
 
 def handle_click(event):
 
-	#with open("recieve.txt", 'w') as f:
-
-		#f.write(entry.get())
-
-		#f.close()
-
 	fd = os.open("pytoc", os.O_WRONLY)
 
-	str1 = entry.get() +'\n'
+	str1 = entry.get()
 
 	try:
 
@@ -62,9 +74,23 @@ def handle_click(event):
 
 		pass
 
-	text.insert(tk.END, "Me: " + str1)
+	now = datetime.now()
+
+	current_time = now.strftime("[%I:%M %p]")
+
+	text.insert(tk.END,current_time + "Me: " + str1 + "\n")
 
 	entry.delete(0,tk.END)
+
+def on_closing():
+
+	fd = os.open("onexit", os.O_WRONLY)
+
+	str2 = "exit"
+
+	os.write(fd, str2.encode())
+
+	window.destroy()
 
 	
 
@@ -98,6 +124,10 @@ sendBtn.pack()
 
 loop()
 
+window.protocol("WM_DELETE_WINDOW", on_closing)
+
 window.mainloop()
+
+
 
 	
