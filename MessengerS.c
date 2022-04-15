@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <time.h>
-#include "clients.h" // For CLientList function definitions
+#include "clients.h" // For ClientList function definitions
 
 #define LENGTH_MSG 101
 #define LENGTH_SEND 201
@@ -28,6 +28,10 @@ char* get_current_time() {
   if (now == -1) {
     printf("The time() function has failed");
   }
+
+  // set timezone for EST
+  setenv("TZ", "EST5EDT", 1);
+  tzset(); 
 
   struct tm *ptm = localtime(&now);
 
