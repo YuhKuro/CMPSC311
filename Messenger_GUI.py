@@ -30,35 +30,36 @@ except FileExistsError:
 
 def loop():
 
-	io = os.open("ctopy", os.O_RDONLY | os.O_NONBLOCK)
+    try:
+        io = os.open("ctopy", os.O_RDONLY | os.O_NONBLOCK)
+        try:
+            buffer = os.read(io,10000)
 
-	try:
+        except OSError as err:
 
-		buffer = os.read(io,10000)
+            if err.errno == errno.EAGAIN or err.errno == errno.EWOULDBLOCK:
 
-	except OSError as err:
+                buffer = None
 
-		if err.errno == errno.EAGAIN or err.errno == errno.EWOULDBLOCK:
+            else:
 
-			buffer = None
+                raise
 
-		else:
+        if buffer is None:
 
-			raise
+            os.close(io)
 
-	if buffer is None:
+        else:
 
-		os.close(io)
+            str1 = buffer.decode("utf-8") + '\n'
 
-	else:
+            if(len(str1) > 2):
 
-		str1 = buffer.decode("utf-8") + '\n'
-
-		if(len(str1) > 2):
-
-			text.insert(tk.END,str1)
-
-	window.after(500,loop)
+                text.insert(tk.END,str1)
+        
+    except OSError as e:
+           pass
+    window.after(500,loop)
 
 def handle_click(event):
 
