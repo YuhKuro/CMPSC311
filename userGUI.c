@@ -68,7 +68,7 @@ void handle_exit(){
   int count = 0;
   while(1)
   {
-    fd_EXIT = open("onexit", O_RDONLY | O_NONBLOCK); // Checks to see if a exit command was sent from python
+    fd_EXIT = open("onexit", O_RDONLY); // Checks to see if a exit command was sent from python
     count = read(fd_EXIT, exitMSG, 6);
     if (strcmp(exitMSG, "exit") == 0) {
       close(fd_EXIT);
