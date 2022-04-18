@@ -1,4 +1,4 @@
 #!/bin/bash
-gnome-terminal -- bash -c "python3 Messenger_GUI.py; exec bash"
-gcc userGUI.c -lpthread -o p1
-./p1
+gcc user.c -lpthread -o p1
+gnome-terminal -- bash -c "./p1; exec bash"
+python3 Messenger_GUI.py
